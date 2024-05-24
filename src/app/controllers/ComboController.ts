@@ -102,6 +102,8 @@ class ComboController {
     // [GET] /combos/:comboId
     getCombo = async (req: Request, res: Response, _next: NextFunction) => {
         try {
+            const authority = req.authority;
+
             const id_combo = req.params.comboId;
             const combo = await Combo.findByPk(id_combo, {
                 include: [
@@ -121,6 +123,15 @@ class ComboController {
             }
             combo.dataValues.quantity_question = quantity_question;
             combo.dataValues.quantity_exam = combo.Exams.length;
+
+            if (authority === 1) {
+                combo.dataValues.added = true;
+                combo.dataValues.cart_or_bought = "bought";
+            }
+            if (authority === -1) {
+                combo.dataValues.added = true;
+                combo.dataValues.cart_or_bought = "cart";
+            }
 
             try {
                 const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);

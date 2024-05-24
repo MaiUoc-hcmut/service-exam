@@ -68,6 +68,57 @@ class CheckingCombo {
             next(createError.InternalServerError(error.message));
         }
     }
+
+    checkGetDetailCombo = async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            if (req.authority === 0) next();
+
+            const id_user = req.user?.user.data.id;
+            const role = req.user?.role;
+            const id_combo = req.params.comboId;
+
+            const combo = await Combo.findByPk(id_combo);
+
+            let user: {
+                user?: any,
+                role?: string
+            } = {
+                user: req.user?.user,
+                role: req.user?.role
+            }
+            if ((role === "teacher" && id_user === combo.id_teacher) || role === "admin") {
+                req.authority = 2;
+                req.user = user;
+                return next();
+            }
+
+            const record = await StudentCombo.findOne({
+                where: {
+                    id_student: id_user,
+                    id_combo
+                }
+            });
+
+            if (record) {
+                req.authority = 1;
+                req.user = user;
+                return next();
+            }
+
+            const response = await axios.get(`${process.env.BASE_URL_PAYMENT_LOCAL}/cart/check/${id_combo}/${id_user}?product=combo`);
+            if (response.data.result) {
+                req.authority = -1;
+                req.user = user;
+                return next();
+            }
+            req.authority = 0;
+            req.user = user;
+            next();
+        } catch (error: any) {
+            console.log(error.message);
+            next(createError.InternalServerError(error.message));
+        }
+    }
 }
 
 

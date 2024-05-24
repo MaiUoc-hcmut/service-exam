@@ -26,6 +26,9 @@ router.route('/page/:page')
 
 router.route('/:comboId')
     .get(
+        Authorize.checkGetAll,
+        Authorize.verifyUser,
+        CheckingCombo.checkGetDetailCombo,
         ComboController.getCombo
     )
     .post(
