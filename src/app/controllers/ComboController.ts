@@ -56,14 +56,10 @@ class ComboController {
                 include: [
                     {
                         model: Exam,
-                        attributes: ['id'],
+                        attributes: ['id', 'quantity_question'],
                         through: {
                             attributes: []
-                        },
-                        include: [{
-                            model: Question,
-                            attributes: ['id']
-                        }]
+                        }
                     }
                 ],
                 limit: pageSize,

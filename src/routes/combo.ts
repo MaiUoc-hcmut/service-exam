@@ -17,6 +17,13 @@ router.route('/')
         ComboController.createComboExam
     );
 
+router.route('/page/:page')
+    .get(
+        Authorize.checkGetAll,
+        Authorize.verifyUser,
+        ComboController.getAllCombos
+    )
+
 router.route('/:comboId')
     .get(
         ComboController.getCombo
