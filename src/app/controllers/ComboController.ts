@@ -67,6 +67,19 @@ class ComboController {
             });
 
             for (const combo of combos) {
+                try {
+                    const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);
+    
+                    combo.dataValues.teacher = {
+                        id: combo.id_teacher,
+                        name: teacher.data.name,
+                        avatar: teacher.data.avatar
+                    };
+                    delete combo.dataValues.id_teacher;
+                } catch (error: any) {
+                    console.log(error.message);
+                }
+
                 let question_quantity = 0;
                 for (const exam of combo.Exams) {
                     question_quantity += exam.quantity_question;
@@ -102,12 +115,20 @@ class ComboController {
                 ]
             });
 
+            let quantity_question = 0;
+            for (const exam of combo.Exams) {
+                quantity_question += exam.quantity_question;
+            }
+            combo.dataValues.quantity_question = quantity_question;
+            combo.dataValues.quantity_exam = combo.Exams.length;
+
             try {
                 const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);
 
                 combo.dataValues.teacher = {
                     id: combo.id_teacher,
-                    name: teacher.data.name
+                    name: teacher.data.name,
+                    avatar: teacher.data.avatar
                 };
                 delete combo.dataValues.id_teacher;
             } catch (error: any) {
@@ -208,6 +229,20 @@ class ComboController {
                         }
                     ]
                 });
+                
+                try {
+                    const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);
+    
+                    combo.dataValues.teacher = {
+                        id: combo.id_teacher,
+                        name: teacher.data.name,
+                        avatar: teacher.data.avatar
+                    };
+                    delete combo.dataValues.id_teacher;
+                } catch (error: any) {
+                    console.log(error.message);
+                }
+
                 let question_quantity = 0;
                 for (const exam of combo.Exams) {
                     question_quantity += exam.quantity_question;
