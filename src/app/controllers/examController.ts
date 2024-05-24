@@ -6,6 +6,7 @@ const ParentCategory = require('../../db/model/par_category');
 const ExamDraft = require('../../db/model/exam_draft');
 const Knowledge = require('../../db/model/knowledge');
 const Error = require('../../db/model/error');
+const Combo = require('../../db/model/combo');
 const { Op } = require("sequelize");
 
 const algoliasearch = require('algoliasearch');
@@ -337,6 +338,13 @@ class ExamController {
                     {
                         model: Category,
                         attributes: ['id', 'name', 'id_par_category'],
+                        through: {
+                            attributes: []
+                        }
+                    },
+                    {
+                        model: Combo,
+                        attributes: ['id', 'name'],
                         through: {
                             attributes: []
                         }

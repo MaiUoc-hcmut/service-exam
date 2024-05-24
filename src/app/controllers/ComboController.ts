@@ -1,5 +1,7 @@
 const Exam = require('../../db/model/exam');
 const Combo = require('../../db/model/combo');
+const Question = require('../../db/model/question');
+const StudentCombo = require('../../db/model/student_combo');
 
 const { sequelize } = require('../../config/db/index');
 const axios = require('axios');
@@ -41,6 +43,53 @@ declare global {
 
 class ComboController {
 
+    // [GET] /combos/page/:page
+    getAllCombos = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const authority = req.authority;
+            const currentPage: number = +req.params.page;
+            const pageSize: number = authority === 2 ? 20 : parseInt(process.env.SIZE_OF_PAGE || '10');
+
+            const count = await Combo.count();
+
+            const combos = await Combo.findAll({
+                include: [
+                    {
+                        model: Exam,
+                        attributes: ['id'],
+                        through: {
+                            attributes: []
+                        },
+                        include: [{
+                            model: Question,
+                            attributes: ['id']
+                        }]
+                    }
+                ],
+                limit: pageSize,
+                offset: pageSize * (currentPage - 1)
+            });
+
+            for (const combo of combos) {
+                let question_quantity = 0;
+                for (const exam of combo.Exams) {
+                    question_quantity += exam.quantity_question;
+                }
+                combo.dataValues.exam_quantity = combo.Exams.length;
+                combo.dataValues.question_quantity = question_quantity;
+                delete combo.dataValues.Exams;
+            }
+
+            res.status(200).json({
+                count,
+                combos
+            });
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // [GET] /combos/:comboId
     getCombo = async (req: Request, res: Response, _next: NextFunction) => {
         try {
@@ -49,13 +98,37 @@ class ComboController {
                 include: [
                     {
                         model: Exam,
-                        attributes: ['id', 'title', 'period', 'quantity_question'],
+                        attributes: ['id', 'title', 'period', 'quantity_question', 'average_rating'],
                         through: {
                             attributes: []
                         }
                     }
                 ]
             });
+
+            try {
+                const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);
+
+                combo.dataValues.teacher = {
+                    id: combo.id_teacher,
+                    name: teacher.data.name
+                };
+                delete combo.dataValues.id_teacher;
+            } catch (error: any) {
+                console.log(error.message);
+            }
+
+            res.status(200).json(combo);
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // [GET] /combos/:comboId/basic
+    getBasicCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const combo = await Combo.findByPk(req.params.comboId);
 
             res.status(200).json(combo);
         } catch (error: any) {
@@ -96,6 +169,51 @@ class ComboController {
                 count,
                 combos
             })
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // [GET] /combos/student/:studentId/page/:page
+    getComboThatStudentBought = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const id_student = req.params.studentId;
+            const records = await StudentCombo.findAll({
+                where: {
+                    id_student
+                }
+            });
+
+            const result: any[] = [];
+
+            for (const record of records) {
+                const combo = await Combo.findOne({
+                    where: {
+                        id: record.id_combo
+                    },
+                    include: [
+                        {
+                            model: Exam,
+                            attribute: ['id'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
+                });
+                let question_quantity = 0;
+                for (const exam of combo.Exams) {
+                    question_quantity += exam.quantity_question;
+                }
+                combo.dataValues.exam_quantity = combo.Exams.length;
+                combo.dataValues.question_quantity = question_quantity;
+                delete combo.dataValues.Exams;
+
+                result.push(combo);
+            }
+
+            res.status(200).json(result);
         } catch (error: any) {
             console.log(error.message);
             res.status(500).json({ error: error.message });
@@ -211,10 +329,33 @@ class ComboController {
         }
     }
 
-    // [POST] /combos/buy
+    // [POST] /combos/:comboId/buy
     studentBuyCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        const t = await sequelize.transaction();
         try {
-            
+            const id_student = req.student.data.id;
+            const id_combo = req.params.comboId;
+
+            await StudentCombo.create({
+                id_student,
+                id_combo
+            }, {
+                transaction: t
+            });
+
+            const combo = await Combo.findByPk(id_combo);
+            const total_registration = combo.total_registration + 1;
+            await combo.update({
+                total_registration
+            }, {
+                transaction: t
+            });
+
+            await t.commit()
+
+            res.status(201).json({
+                message: "Student has been bought the combo!"
+            });
         } catch (error: any) {
             console.log(error.message);
             res.status(500).json({ error: error.message });

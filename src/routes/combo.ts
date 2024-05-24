@@ -21,11 +21,21 @@ router.route('/:comboId')
     .get(
         ComboController.getCombo
     )
+    .post(
+        Authorize.verifyStudent,
+        CheckingCombo.checkStudentBuyCombo,
+        ComboController.studentBuyCombo
+    )
     .delete(
         Authorize.authorizeTeacher,
         CheckingCombo.checkMofifyCombo,
         ComboController.deleteCombo
-    )
+    );
+
+router.route('/:comboId/basic')
+    .get(
+        ComboController.getBasicCombo
+    );
 
 router.route('/teacher/:teacherId/page/:page')
     .get(
@@ -33,7 +43,12 @@ router.route('/teacher/:teacherId/page/:page')
         Authorize.verifyUser,
         CheckingExam.checkGetExamCreatedByTeacher,
         ComboController.getComboCreatedByTeacher
-    )
+    );
+
+router.route('/student/:studentId/page/:page')
+    .get(
+        ComboController.getComboThatStudentBought
+    );
 
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const Exam = require('../../db/model/exam');
 const Combo = require('../../db/model/combo');
+const StudentCombo = require('../../db/model/student_combo');
 
 import { Request, Response, NextFunction } from "express";
 const createError = require('http-errors');
@@ -39,6 +40,29 @@ class CheckingCombo {
                 let error = "You do not have permission to do this action!";
                 return next(createError.Unauthorized(error));
             }
+        } catch (error: any) {
+            console.log(error.message);
+            next(createError.InternalServerError(error.message));
+        }
+    }
+
+    checkStudentBuyCombo = async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            const id_student = req.student.data.id;
+            const id_combo = req.params.comboId;
+
+            const record = await StudentCombo.findOne({
+                where: {
+                    id_combo,
+                    id_student
+                }
+            });
+
+            if (record) {
+                let error = "This student had have bought this combo!"
+                return next(createError.BadRequest(error));
+            }
+            next();
         } catch (error: any) {
             console.log(error.message);
             next(createError.InternalServerError(error.message));
