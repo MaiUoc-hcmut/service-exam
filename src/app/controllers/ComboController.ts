@@ -178,11 +178,21 @@ class ComboController {
     // [GET] /combos/student/:studentId/page/:page
     getComboThatStudentBought = async (req: Request, res: Response, _next: NextFunction) => {
         try {
+            const currentPage: number = +req.params.page;
+            const pageSize: number = parseInt(process.env.SIZE_OF_PAGE || '10');
             const id_student = req.params.studentId;
-            const records = await StudentCombo.findAll({
+
+            const count = await StudentCombo.count({
                 where: {
                     id_student
                 }
+            });
+            const records = await StudentCombo.findAll({
+                where: {
+                    id_student
+                },
+                limit: pageSize,
+                offset: pageSize * (currentPage - 1)
             });
 
             const result: any[] = [];
@@ -213,7 +223,10 @@ class ComboController {
                 result.push(combo);
             }
 
-            res.status(200).json(result);
+            res.status(200).json({
+                count,
+                combos: result
+            });
         } catch (error: any) {
             console.log(error.message);
             res.status(500).json({ error: error.message });
