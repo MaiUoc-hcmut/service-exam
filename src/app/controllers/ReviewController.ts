@@ -259,12 +259,19 @@ class ReviewController {
 
             if (review) {
                 const deletedRating = review.rating;
-                average_rating = ((exam.average_rating * exam.total_review) - deletedRating + body.rating) / total_review;
+                average_rating = ((average_rating * total_review) - deletedRating + body.rating) / total_review;
                 await review.destroy({ transaction: t });
             } else {
-                total_review = exam.total_review + 1;
-                average_rating = ((exam.average_rating * exam.total_review) + body.rating) / total_review;
+                total_review += 1;
+                average_rating = ((average_rating * exam.total_review) + body.rating) / total_review;
             }
+
+            await exam.update({
+                average_rating,
+                total_review
+            }, {
+                transaction: t
+            });
             
             const newReview = await Review.create({
                 id_student,
