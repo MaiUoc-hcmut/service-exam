@@ -5,6 +5,8 @@ const StudentCombo = require('../../db/model/student_combo');
 import { Request, Response, NextFunction } from "express";
 const createError = require('http-errors');
 
+const axios = require('axios');
+
 class CheckingCombo {
     checkCreateCombo = async (req: Request, _res: Response, next: NextFunction) => {
         try {
