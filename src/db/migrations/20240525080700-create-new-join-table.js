@@ -4,10 +4,6 @@
 module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.createTable('category-combo', {
-      id: {
-        type: Sequelize.UUID,
-        primaryKey: true
-      },
       id_combo: {
         type: Sequelize.UUID,
         references: {
