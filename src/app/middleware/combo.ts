@@ -48,6 +48,7 @@ class CheckingCombo {
                 let error = "You do not have permission to do this action!";
                 return next(createError.Unauthorized(error));
             }
+            next();
         } catch (error: any) {
             console.log(error.message);
             next(createError.InternalServerError(error.message));
