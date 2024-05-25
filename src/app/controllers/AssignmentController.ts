@@ -814,15 +814,27 @@ class AssignmentController {
                 if (q.Knowledge.length === 0) {
                     const foundObject = classification.find(o => o.name === "other");
                     if (!foundObject) {
-                        classification.push({
-                            name: "other",
-                            questions: [{
-                                id: q.id,
-                                order: question.order
-                            }],
-                            right_answer: 0,
-                            wrong_answer: 0
-                        });
+                        if (question.is_correct) {
+                            classification.push({
+                                name: "other",
+                                questions: [{
+                                    id: q.id,
+                                    order: question.order
+                                }],
+                                right_answer: 1,
+                                wrong_answer: 0
+                            });
+                        } else {
+                            classification.push({
+                                name: "other",
+                                questions: [{
+                                    id: q.id,
+                                    order: question.order
+                                }],
+                                right_answer: 0,
+                                wrong_answer: 1
+                            });
+                        }
                     } else {
                         foundObject.questions.push({
                             id: q.id,
@@ -842,15 +854,27 @@ class AssignmentController {
                 for (const knowledge of q.Knowledge) {
                     const foundObject = classification.find(o => o.name === knowledge.name);
                     if (!foundObject) {
-                        classification.push({
-                            name: knowledge.name,
-                            questions: [{
-                                id: q.id,
-                                order: question.order
-                            }],
-                            right_answer: 0,
-                            wrong_answer: 0
-                        });
+                        if (question.is_correct) {
+                            classification.push({
+                                name: knowledge.name,
+                                questions: [{
+                                    id: q.id,
+                                    order: question.order
+                                }],
+                                right_answer: 1,
+                                wrong_answer: 0
+                            });
+                        } else {
+                            classification.push({
+                                name: knowledge.name,
+                                questions: [{
+                                    id: q.id,
+                                    order: question.order
+                                }],
+                                right_answer: 0,
+                                wrong_answer: 1
+                            });
+                        }
                     } else {
                         foundObject.questions.push({
                             id: q.id,
