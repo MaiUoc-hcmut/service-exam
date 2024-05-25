@@ -18,7 +18,6 @@ class CheckingCombo {
             if (
                 !name || 
                 price < 0 || 
-                !description || 
                 exams === undefined || 
                 categories === undefined || 
                 !Array.isArray(categories) || 
