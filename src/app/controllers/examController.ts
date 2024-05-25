@@ -325,7 +325,7 @@ class ExamController {
                             },
                             {
                                 model: Knowledge,
-                                attributes: ['name'],
+                                attributes: ['id', 'name'],
                                 through: {
                                     attributes: []
                                 }
@@ -352,36 +352,49 @@ class ExamController {
                 ]
             });
 
-            let knowledges: {
+            let classification: {
                 name: string,
                 questions: string[]
             }[] = [];
+
             if (exam.questions) {
                 for (const question of exam.questions) {
+                    let knowledges: {
+                        value: string,
+                        label: string
+                    }[] = [];
                     if (question.Knowledge.length === 0) {
-                        const foundObject = knowledges.find(o => o.name === "other");
+                        const foundObject = classification.find(o => o.name === "other");
                         if (!foundObject) {
-                            knowledges.push({
+                            classification.push({
                                 name: "other",
                                 questions: [question.id]
                             });
                         } else {
                             foundObject.questions.push(question.id);
                         }
+                        question.dataValues.knowledges = [];
+                        delete question.dataValues.Knowledge;
                         continue;
                     }
 
                     for (const knowledge of question.Knowledge) {
-                        const foundObject = knowledges.find(o => o.name === knowledge.name);
+                        const foundObject = classification.find(o => o.name === knowledge.name);
                         if (!foundObject) {
-                            knowledges.push({
+                            classification.push({
                                 name: knowledge.name,
                                 questions: [question.id]
                             });
                         } else {
                             foundObject.questions.push(question.id);
                         }
+                        knowledges.push({
+                            value: knowledge.id,
+                            label: knowledge.name
+                        });
                     }
+                    delete question.dataValues.Knowledge;
+                    question.dataValues.knowledges = knowledges;
                 }
             }
 
@@ -394,7 +407,7 @@ class ExamController {
                 }
             }
 
-            exam.dataValues.classification = knowledges;
+            exam.dataValues.classification = classification;
 
             const topic = await axios.get(`${process.env.BASE_URL_COURSE_LOCAL}/topics/check/exam/${exam.id}`);
 
@@ -548,13 +561,15 @@ class ExamController {
                 }
 
                 if (knowledges) {
-                    for (const id of knowledges) {
-                        const knowledge = await Knowledge.findByPk(id);
+                    for (const knowledgeObject of knowledges) {
+                        const { value, label } = knowledgeObject;
+                        const knowledge = await Knowledge.findByPk(value);
 
                         if (!knowledge) {
                             return res.status(400).json({
                                 message: "Knowledge does not exist!",
-                                knowledge: id
+                                knowledgeId: value,
+                                knowledgeName: label
                             });
                         }
                         await newQuestion.addKnowledge(knowledge, { transaction: t });
