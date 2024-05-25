@@ -763,14 +763,14 @@ class AssignmentController {
                     {
                         model: DetailQuestion,
                         as: 'details',
-                        attributes: ['id', 'id_question', 'comment', 'draft'],
+                        attributes: ['id', 'id_question', 'comment', 'draft', 'order'],
                         include: [
                             {
                                 model: Answer,
                                 attributes: ['id', 'is_correct', 'content_text', 'content_image'],
                                 through: {
-                                    attributes: ['is_selected']
-                                },
+                                    attributes: ['is_selected', 'order']
+                                }
                             }
                         ]
                     }
