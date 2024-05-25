@@ -4,6 +4,7 @@ const Exam = require('../../db/model/exam');
 const Question = require('../../db/model/question');
 const Answer = require('../../db/model/answer');
 const SelectedAnswer = require('../../db/model/selected_answer');
+const Knowledge = require('../../db/model/knowledge');
 
 const { sequelize } = require('../../config/db/index');
 const axios = require('axios');
@@ -778,14 +779,79 @@ class AssignmentController {
 
             const exam = await Exam.findByPk(assignment.id_exam);
 
+            let classification: {
+                name: string,
+                questions: {
+                    id: string,
+                    order: number
+                }[],
+                right_answer: number,
+                wrong_answer: number,
+            }[] = [];
+
             for (let question of assignment.details) {
-                const q = await Question.findByPk(question.id_question);
+                const q = await Question.findByPk(question.id_question, {
+                    include: [{
+                        model: Knowledge,
+                        attributes: ['id', 'name'],
+                        through: {
+                            attributes: []
+                        }
+                    }]
+                });
+
+                let knowledges: {
+                    value: string,
+                    label: string
+                }[] = [];
 
                 if (!q) {
                     return res.status(500).json({
                         message: "For some reason, question has been deleted or did not exist!"
                     });
                 }
+
+                if (q.Knowledge.length === 0) {
+                    const foundObject = classification.find(o => o.name === "other");
+                    if (!foundObject) {
+                        classification.push({
+                            name: "other",
+                            questions: [{
+                                id: q.id,
+                                order: question.order
+                            }],
+                            right_answer: 0,
+                            wrong_answer: 0
+                        });
+                    } else {
+                        foundObject.questions.push(question.id);
+                    }
+                    question.dataValues.knowledges = [];
+                    continue;
+                }
+
+                for (const knowledge of q.Knowledge) {
+                    const foundObject = classification.find(o => o.name === knowledge.name);
+                    if (!foundObject) {
+                        classification.push({
+                            name: knowledge.name,
+                            questions: [{
+                                id: q.id,
+                                order: question.order
+                            }],
+                            right_answer: 0,
+                            wrong_answer: 0
+                        });
+                    } else {
+                        foundObject.questions.push(question.id);
+                    }
+                    knowledges.push({
+                        value: knowledge.id,
+                        label: knowledge.name
+                    });
+                }
+                question.dataValues.knowledges = knowledges;
+
                 let is_correct = true;
 
                 for (let answer of question.Answers) {
@@ -801,6 +867,8 @@ class AssignmentController {
                     delete question.dataValues.draft;
                 }
             }
+
+            assignment.dataValues.classification = classification;
 
             if (authority === 2 && role === "teacher") {
                 if (assignment.reviewed === 0) {
@@ -909,7 +977,7 @@ class AssignmentController {
             }, {
                 transaction: t
             });
-
+            let i = 1;
             for (const question of assignment) {
                 const { id_question, answers } = question;
 
@@ -922,7 +990,8 @@ class AssignmentController {
 
                 const newDetailQuestion = await DetailQuestion.create({
                     id_question,
-                    id_assignment: newAssignment.id
+                    id_assignment: newAssignment.id,
+                    order: i
                 }, {
                     transaction: t
                 });
@@ -930,6 +999,7 @@ class AssignmentController {
                 let right_flag = true;
                 let empty_flag = true;
 
+                let j = 1;
                 for (const answer of answers) {
                     const { id_answer, is_selected } = answer;
 
@@ -945,15 +1015,20 @@ class AssignmentController {
                     await SelectedAnswer.create({
                         id_answer,
                         id_detail_question: newDetailQuestion.id,
-                        is_selected
+                        is_selected,
+                        order: j
                     }, {
                         transaction: t
                     });
                     right_flag = is_selected === answerToAdd.is_correct ? right_flag : false;
                     empty_flag = is_selected ? false : empty_flag;
+
+                    j++;
                 }
                 right_question = right_flag ? ++right_question : right_question;
                 empty_question = empty_flag ? ++empty_question : empty_question;
+                
+                i++;
             }
             wrong_question = assignment.length - right_question - empty_question;
 

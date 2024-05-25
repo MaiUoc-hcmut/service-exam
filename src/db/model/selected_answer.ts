@@ -24,6 +24,10 @@ SelectedAnswer.init({
     is_selected: {
         type: DataTypes.BOOLEAN,
         allowNull: false
+    },
+    order: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        defaultValue: 0
     }
 }, {
     sequelize,

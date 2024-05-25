@@ -22,6 +22,10 @@ DetailQuestion.init({
         type: DataTypes.UUID,
         allowNull: false,
     },
+    order: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        defaultValue: 0
+    },
     comment: {
         type: DataTypes.STRING(300),
         defaultValue: ""
