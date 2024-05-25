@@ -222,7 +222,10 @@ class ComboController {
                 },
                 include: [{
                     model: Category,
-                    attributes: ['id', 'id_par_category', 'name']
+                    attributes: ['id', 'id_par_category', 'name'],
+                    through: {
+                        attributes: []
+                    }
                 }],
                 limit: pageSize,
                 offset: pageSize * (currentPage - 1)
@@ -267,7 +270,10 @@ class ComboController {
                 },
                 include: [{
                     model: Category,
-                    attributes: ['id', 'id_par_category', 'name']
+                    attributes: ['id', 'id_par_category', 'name'],
+                    through: {
+                        attributes: []
+                    }
                 }],
                 limit: pageSize,
                 offset: pageSize * (currentPage - 1)
