@@ -1047,7 +1047,7 @@ class AssignmentController {
             } else {
                 await assignment.update({
                     comment,
-                    draft: comment,
+                    draft: "",
                     reviewed: 2
                 }, {
                     transaction: t
@@ -1071,7 +1071,7 @@ class AssignmentController {
                 } else {
                     await DetailQuestion.update({
                         comment: comment_question,
-                        draft: comment_question
+                        draft: ""
                     }, {
                         where: {
                             id: detail_question.id
