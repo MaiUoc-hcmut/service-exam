@@ -490,8 +490,73 @@ class ComboController {
 
     // [PUT] /combos/:comboId
     updateCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        const t = await sequelize.transaction();
         try {
-            
+            const id_combo = req.params.comboId;
+
+            let data = req.body.data;
+            if (typeof data === "string") {
+                data = JSON.parse(data);
+            }
+
+            let { exams, categories, ...comboBody } = data;
+
+            const combo = await Combo.findByPk(id_combo, {
+                include: [
+                    {
+                        model: Exam,
+                        attributes: ['id'],
+                        through: {
+                            attributes: []
+                        }
+                    },
+                    {
+                        model: Category,
+                        attributes: ['id'],
+                        through: {
+                            attributes: []
+                        }
+                    }
+                ]
+            });
+
+            for (const exam of combo.Exams) {
+                if (exams.includes(exam.id)) {
+                    exams = exams.filter((id: string) => id !== exam.id)
+                } else {
+                    const e = await Exam.findByPk(exam.id);
+                    await combo.removeExam(e, { transaction: t });
+                }
+            }
+
+            for (const id of exams) {
+                const e = await Exam.findByPk(id);
+                await combo.addExam(e, { transaction: t });
+            }
+
+            for (const category of combo.Categories) {
+                if (categories.includes(category.id)) {
+                    categories = categories.filter((id: string) => id !== category.id);
+                } else {
+                    const c = await Category.findByPk(category.id);
+                    await combo.removeCategory(c, { transaction: t });
+                }
+            } 
+
+            for (const id of categories) {
+                const c = await Category.findByPk(id);
+                await combo.addCategory(c, { transaction: t });
+            }
+
+            await combo.update({
+                ...comboBody
+            }, {
+                transaction: t
+            });
+
+            await t.commit();
+
+            res.status(200).json(combo);
         } catch (error: any) {
             console.log(error.message);
             res.status(500).json({ error: error.message });

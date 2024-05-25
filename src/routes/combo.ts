@@ -36,6 +36,11 @@ router.route('/:comboId')
         CheckingCombo.checkStudentBuyCombo,
         ComboController.studentBuyCombo
     )
+    .put(
+        Authorize.authorizeTeacher,
+        CheckingCombo.checkMofifyCombo,
+        ComboController.updateCombo
+    )
     .delete(
         Authorize.authorizeTeacher,
         CheckingCombo.checkMofifyCombo,
