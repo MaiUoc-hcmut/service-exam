@@ -741,15 +741,7 @@ class ExamController {
 
                     // The last state of modify is change
                     else {
-                        const questionToUpdate = await Question.findByPk(question.id, {
-                            include: [{
-                                model: Knowledge,
-                                attributes: ['id', 'name'],
-                                through: {
-                                    attributes: []
-                                }
-                            }]
-                        });
+                        const questionToUpdate = await Question.findByPk(question.id);
 
                         let questionUrl = questionToUpdate.content_image;
 
@@ -774,13 +766,11 @@ class ExamController {
                             transaction: t
                         });
 
-                        // Add knowledes to join table with question
-                        let knowledgeList: any[] = [];
-                        for (const knowledgeObject of questionToUpdate.Knowledge) {
-                            const knowledge = await Knowledge.findByPk(knowledgeObject.id);
-                            knowledgeList.push(knowledge);
+                        // Add knowledge to join table with question
+                        for (const knowledgeObject of question.knowledges) {
+                            const knowledge = await Knowledge.findByPk(knowledgeObject.value);
+                            newQuestion.addKnowledge(knowledge, { transaction: t });
                         }
-                        await newQuestion.addKnowledges(knowledgeList);
 
                         // Update status of old question to delete
                         await questionToUpdate.update({ status: "delete" }, { transaction: t });
