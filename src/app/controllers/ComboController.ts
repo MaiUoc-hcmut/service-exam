@@ -62,6 +62,13 @@ class ComboController {
                         through: {
                             attributes: []
                         }
+                    },
+                    {
+                        model: Category,
+                        attributes: ['id', 'id_par_category', 'name'],
+                        through: {
+                            attributes: []
+                        }
                     }
                 ],
                 limit: pageSize,
@@ -213,6 +220,10 @@ class ComboController {
                     id_teacher,
                     status
                 },
+                include: [{
+                    model: Category,
+                    attributes: ['id', 'id_par_category', 'name']
+                }],
                 limit: pageSize,
                 offset: pageSize * (currentPage - 1)
             });
@@ -254,6 +265,10 @@ class ComboController {
                 where: {
                     id_student
                 },
+                include: [{
+                    model: Category,
+                    attributes: ['id', 'id_par_category', 'name']
+                }],
                 limit: pageSize,
                 offset: pageSize * (currentPage - 1)
             });
