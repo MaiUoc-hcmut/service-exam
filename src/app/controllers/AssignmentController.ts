@@ -824,7 +824,16 @@ class AssignmentController {
                             wrong_answer: 0
                         });
                     } else {
-                        foundObject.questions.push(question.id);
+                        foundObject.questions.push({
+                            id: q.id,
+                            order: question.order
+                        });
+
+                        if (question.is_correct) {
+                            foundObject.right_answer++;
+                        } else {
+                            foundObject.wrong_answer++;
+                        }
                     }
                     question.dataValues.knowledges = [];
                     continue;
@@ -843,7 +852,16 @@ class AssignmentController {
                             wrong_answer: 0
                         });
                     } else {
-                        foundObject.questions.push(question.id);
+                        foundObject.questions.push({
+                            id: q.id,
+                            order: question.order
+                        });
+
+                        if (question.is_correct) {
+                            foundObject.right_answer++;
+                        } else {
+                            foundObject.wrong_answer++;
+                        }
                     }
                     knowledges.push({
                         value: knowledge.id,
