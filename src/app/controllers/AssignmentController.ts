@@ -1199,14 +1199,17 @@ class AssignmentController {
                 }
             }
 
-            if (type === "draft") {
+            let examType = exam.id_course ? "exercise" : "exam";
+
+            if (type !== "draft") {
                 try {
                     const data = {
                         id_assignment,
                         exam_name: exam.title,
                         id_course: exam.id_course,
                         teacher_name,
-                        id_student: assignment.id_student
+                        id_student: assignment.id_student,
+                        examType
                     }
                     const response = await axios.post(`${process.env.BASE_URL_NOTIFICATION_LOCAL}/notification/comment-on-assignment`, { data });
                     console.log(response.data);
