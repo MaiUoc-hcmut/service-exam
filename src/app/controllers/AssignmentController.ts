@@ -848,51 +848,51 @@ class AssignmentController {
                         }
                     }
                     question.dataValues.knowledges = [];
-                    continue;
-                }
-
-                for (const knowledge of q.Knowledge) {
-                    const foundObject = classification.find(o => o.name === knowledge.name);
-                    if (!foundObject) {
-                        if (question.is_correct) {
-                            classification.push({
-                                name: knowledge.name,
-                                questions: [{
-                                    id: q.id,
-                                    order: question.order
-                                }],
-                                right_answer: 1,
-                                wrong_answer: 0
-                            });
+                } else {
+                    for (const knowledge of q.Knowledge) {
+                        const foundObject = classification.find(o => o.name === knowledge.name);
+                        if (!foundObject) {
+                            if (question.is_correct) {
+                                classification.push({
+                                    name: knowledge.name,
+                                    questions: [{
+                                        id: q.id,
+                                        order: question.order
+                                    }],
+                                    right_answer: 1,
+                                    wrong_answer: 0
+                                });
+                            } else {
+                                classification.push({
+                                    name: knowledge.name,
+                                    questions: [{
+                                        id: q.id,
+                                        order: question.order
+                                    }],
+                                    right_answer: 0,
+                                    wrong_answer: 1
+                                });
+                            }
                         } else {
-                            classification.push({
-                                name: knowledge.name,
-                                questions: [{
-                                    id: q.id,
-                                    order: question.order
-                                }],
-                                right_answer: 0,
-                                wrong_answer: 1
+                            foundObject.questions.push({
+                                id: q.id,
+                                order: question.order
                             });
+    
+                            if (question.is_correct) {
+                                foundObject.right_answer++;
+                            } else {
+                                foundObject.wrong_answer++;
+                            }
                         }
-                    } else {
-                        foundObject.questions.push({
-                            id: q.id,
-                            order: question.order
+                        knowledges.push({
+                            value: knowledge.id,
+                            label: knowledge.name
                         });
-
-                        if (question.is_correct) {
-                            foundObject.right_answer++;
-                        } else {
-                            foundObject.wrong_answer++;
-                        }
                     }
-                    knowledges.push({
-                        value: knowledge.id,
-                        label: knowledge.name
-                    });
+                    question.dataValues.knowledges = knowledges;
                 }
-                question.dataValues.knowledges = knowledges;
+
 
                 let is_correct = true;
 
