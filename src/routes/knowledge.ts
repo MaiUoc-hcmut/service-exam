@@ -4,6 +4,7 @@ const router = express.Router();
 const KnowledgeController = require('../app/controllers/KnowledgeController');
 
 router.route('/')
+    .get(KnowledgeController.getAllKnowledges)
     .post(KnowledgeController.createKnowledges);
 
 router.route('/filter')

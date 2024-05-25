@@ -2,6 +2,8 @@ const Exam = require('../../db/model/exam');
 const Combo = require('../../db/model/combo');
 const Question = require('../../db/model/question');
 const StudentCombo = require('../../db/model/student_combo');
+const Category = require('../../db/model/category');
+const ParentCategory = require('../../db/model/par_category');
 
 const { sequelize } = require('../../config/db/index');
 const axios = require('axios');
@@ -80,6 +82,14 @@ class ComboController {
                     console.log(error.message);
                 }
 
+                for (const category of combo.Categories) {
+                    const parCategory = await ParentCategory.findByPk(category.id_par_category);
+                    category.dataValues[`${parCategory.name}`] = category.name;
+
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
+                }
+
                 let question_quantity = 0;
                 for (const exam of combo.Exams) {
                     question_quantity += exam.quantity_question;
@@ -113,9 +123,23 @@ class ComboController {
                         through: {
                             attributes: []
                         }
+                    },
+                    {
+                        model: Category,
+                        attributes: ['id', 'id_par_category', 'name'],
+                        through: {
+                            attributes: []
+                        }
                     }
                 ]
             });
+
+            for (const category of combo.Categories) {
+                const parCategory = await ParentCategory.findByPk(category.id_par_category);
+                category.dataValues[`${parCategory.name}`] = category.name;
+                delete category.dataValues.name;
+                delete category.dataValues.id_par_category;
+            }
 
             let quantity_question = 0;
             for (const exam of combo.Exams) {
@@ -193,6 +217,17 @@ class ComboController {
                 offset: pageSize * (currentPage - 1)
             });
 
+            for (const combo of combos) {
+                // Format category before response
+                for (const category of combo.Categories) {
+                    const parCategory = await ParentCategory.findByPk(category.id_par_category);
+                    category.dataValues[`${parCategory.name}`] = category.name;
+
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
+                }
+            }
+
             res.status(200).json({
                 count,
                 combos
@@ -240,6 +275,14 @@ class ComboController {
                         }
                     ]
                 });
+
+                for (const category of combo.Categories) {
+                    const parCategory = await ParentCategory.findByPk(category.id_par_category);
+                    category.dataValues[`${parCategory.name}`] = category.name;
+
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
+                }
                 
                 try {
                     const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);
@@ -288,7 +331,7 @@ class ComboController {
 
             // const { thumbnail, cover } = req.URL;
 
-            const { exams, ...comboBody } = body;
+            const { exams, categories, ...comboBody } = body;
 
             const combo = await Combo.create({
                 id_teacher,
@@ -306,6 +349,13 @@ class ComboController {
             }
 
             await combo.addExams(examInstances, { transaction: t });
+
+            let categoryInstances = [];
+            for (const category of categories) {
+                const c = await Category.findByPk(category);
+                categoryInstances.push(c);
+            }
+            await combo.addCategories(categoryInstances, { transaction: t });
 
             await t.commit();
 

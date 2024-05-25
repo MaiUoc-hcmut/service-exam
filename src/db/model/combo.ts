@@ -2,6 +2,7 @@ const { sequelize } = require('../../config/db');
 import { Model, DataTypes, CreationOptional } from 'sequelize';
 
 const Exam = require('./exam');
+const Category = require('./category');
 
 class Combo extends Model {
     declare createdAt: CreationOptional<Date>;
@@ -67,6 +68,17 @@ Combo.belongsToMany(Exam, {
 Exam.belongsToMany(Combo, {
     through: 'combo_exam',
     foreignKey: 'id_exam',
+    otherKey: 'id_combo'
+});
+
+Combo.belongsToMany(Category, {
+    through: 'category-combo',
+    foreignKey: 'id_combo',
+    otherKey: 'id_category'
+});
+Category.belongsToMany(Combo, {
+    through: 'category-combo',
+    foreignKey: 'id_category',
     otherKey: 'id_combo'
 });
 

@@ -13,9 +13,18 @@ class CheckingCombo {
                 body = JSON.parse(body);
             }
 
-            const { name, price, description, exams } = body;
+            const { name, price, description, exams, categories } = body;
 
-            if (!name || price < 0 || !description || exams === undefined) {
+            if (
+                !name || 
+                price < 0 || 
+                !description || 
+                exams === undefined || 
+                categories === undefined || 
+                !Array.isArray(categories) || 
+                categories.length === 0
+            ) 
+            {
                 let error = "Information Invalid!";
                 return next(createError.BadRequest(error));
             }
