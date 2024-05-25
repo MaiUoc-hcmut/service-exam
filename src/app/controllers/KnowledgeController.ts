@@ -12,6 +12,18 @@ require('dotenv').config();
 
 class KnowledgeController {
 
+    // [GET] /knowledges
+    getAllKnowledges = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const knowledges = await Knowledge.findAll();
+
+            res.status(200).json(knowledges);
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // [POST] /knowledges
     createKnowledges = async (req: Request, res: Response, _next: NextFunction) => {
         let body = req.body.data;
