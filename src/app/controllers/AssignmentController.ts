@@ -5,6 +5,7 @@ const Question = require('../../db/model/question');
 const Answer = require('../../db/model/answer');
 const SelectedAnswer = require('../../db/model/selected_answer');
 const Knowledge = require('../../db/model/knowledge');
+const Combo = require('../../db/model/combo');
 
 const { sequelize } = require('../../config/db/index');
 const axios = require('axios');
@@ -777,7 +778,15 @@ class AssignmentController {
                 ]
             });
 
-            const exam = await Exam.findByPk(assignment.id_exam);
+            const exam = await Exam.findByPk(assignment.id_exam, {
+                include: [{
+                    model: Combo,
+                    attributes: ['id', 'name'],
+                    through: {
+                        attributes: []
+                    }
+                }]
+            });
 
             let classification: {
                 name: string,
@@ -929,6 +938,7 @@ class AssignmentController {
             await t.commit();
 
             assignment.dataValues.exam_name = exam.title;
+            assignment.dataValues.combo = exam.Combos;
 
             // Count time to do assignment
             {
