@@ -8,7 +8,10 @@ const ParentCategory = require('../../db/model/par_category');
 const { sequelize } = require('../../config/db/index');
 const axios = require('axios');
 
+const algoliasearch = require('algoliasearch');
+
 import { Request, Response, NextFunction } from "express";
+const { Op } = require('sequelize');
 
 const fileUpload = require('../../config/firebase/fileUpload');
 const { firebaseConfig } = require('../../config/firebase/firebase');
@@ -49,12 +52,117 @@ class ComboController {
     getAllCombos = async (req: Request, res: Response, _next: NextFunction) => {
         try {
             const authority = req.authority;
+            let status = authority === 2
+                            ? ['public', 'paid', 'private', 'draft']
+                            : ['public', 'paid'];
+
+            const levelCondition: any[] = [];
+            const subjectCondition: any[] = [];
+            const classCondition: any[] = [];
+
+            const { class: _class, subject, level } = req.query;
+
+            const minPrice = typeof req.query.minPrice === 'string' ? parseInt(req.query.minPrice) : undefined;
+            const maxPrice = typeof req.query.maxPrice === 'string' ? parseInt(req.query.maxPrice) : undefined;
+
+            if (!_class) {
+
+            } else if (Array.isArray(_class)) {
+                classCondition.push(..._class);
+            } else {
+                classCondition.push(_class);
+            }
+
+            if (!subject) {
+
+            } else if (Array.isArray(subject)) {
+                subjectCondition.push(...subject);
+            } else {
+                subjectCondition.push(subject);
+            }
+
+            if (!level) {
+
+            } else if (Array.isArray(level)) {
+                levelCondition.push(...level);
+            } else {
+                levelCondition.push(level)
+            }
+
+            if (Array.isArray(minPrice) || Array.isArray(maxPrice)) {
+                throw new Error("MinPrice and MaxPrice should just primitive type, not array type")
+            }
+
+            if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+                throw new Error('minPrice must be less than maxPrice.');
+            }
+
+            const condition: {
+                price: any
+            } = {
+                price: {
+                    [Op.between]: [0, 99999999]
+                }
+            };
+
+            if (minPrice !== undefined && maxPrice !== undefined) {
+                condition.price = {
+                    [Op.between]: [minPrice, maxPrice]
+                };
+            } else if (minPrice !== undefined) {
+                condition.price = {
+                    [Op.gte]: minPrice
+                };
+            } else if (maxPrice !== undefined) {
+                condition.price = {
+                    [Op.lte]: maxPrice
+                };
+            }
+
+            enum SortQuery {
+                Rating = 'rating',
+                Date = 'date',
+                Price = 'price',
+                Registration = 'registration'
+            }
+            enum SortOrder {
+                ASC = 'asc',
+                DESC = 'desc'
+            }
+
+            const sortFactor = {
+                [SortQuery.Rating]: 'average_rating',
+                [SortQuery.Date]: 'updatedAt',
+                [SortQuery.Price]: 'price',
+                [SortQuery.Registration]: 'registration'
+            }
+            const orderFactor = {
+                [SortOrder.ASC]: 'asc',
+                [SortOrder.DESC]: 'desc',
+            }
+
+
+            const sortQuery = req.query.sort as SortQuery;
+            const orderSort = req.query.order as SortOrder;
+
+            let defaultQuery = 'updatedAt';
+            let defaultOrder = 'desc';
+
+            if (typeof sortQuery === "string" && Object.values(SortQuery).includes(sortQuery)) {
+                defaultQuery = sortFactor[sortQuery as SortQuery];
+            }
+            if (typeof orderSort === "string" && Object.values(SortOrder).includes(orderSort)) {
+                defaultOrder = orderFactor[orderSort as SortOrder];
+            }
+
             const currentPage: number = +req.params.page;
             const pageSize: number = authority === 2 ? 20 : parseInt(process.env.SIZE_OF_PAGE || '10');
 
-            const count = await Combo.count();
-
-            const combos = await Combo.findAll({
+            const queryOption: any = {
+                where: {
+                    ...condition,
+                    status
+                },
                 include: [
                     {
                         model: Exam,
@@ -67,12 +175,48 @@ class ComboController {
                         model: Category,
                         attributes: ['id', 'id_par_category', 'name'],
                         through: {
-                            attributes: []
-                        }
+                            attributes: [],
+                        },
+                    },
+                ]
+            }
+
+            let categoryLength = 0;
+
+            if (classCondition.length > 0 || levelCondition.length > 0 || subjectCondition.length > 0) {
+
+                queryOption.include[0].where = {
+                    id: {
+                        [Op.or]: [
+                            { [Op.or]: classCondition },
+                            { [Op.or]: levelCondition },
+                            { [Op.or]: subjectCondition }
+                        ]
                     }
-                ],
+                }
+                if (levelCondition.length > 0) {
+                    categoryLength++;
+                }
+                if (classCondition.length > 0) {
+                    categoryLength++;
+                }
+                if (subjectCondition.length > 0) {
+                    categoryLength++;
+                }
+                queryOption.group = ['Combo.id'];
+                queryOption.having = sequelize.literal("COUNT(DISTINCT " + `Categories` + "." + `id` + `) = ${categoryLength}`);
+            }
+
+            const count = await Combo.findAll({
+                ...queryOption
+            });
+
+            const combos = await Combo.findAll({
+                ...queryOption,
+                order: [[defaultQuery, defaultOrder]],
                 limit: pageSize,
-                offset: pageSize * (currentPage - 1)
+                offset: pageSize * (currentPage - 1),
+                subQuery: false
             });
 
             for (const combo of combos) {
@@ -339,11 +483,82 @@ class ComboController {
         }
     }
 
+    // [GET] /combos/search/page/:page
+    searchCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        const client = algoliasearch(process.env.ALGOLIA_APPLICATION_ID, process.env.ALGOLIA_ADMIN_API_KEY);
+        const index = client.initIndex(process.env.ALGOLIA_COMBO_INDEX);
+        try {
+            const currentPage: number = +req.params.page;
+            const pageSize: number = parseInt(process.env.SIZE_OF_PAGE || '10');
+
+            const query = req.query.query;
+            let filters = `status:public AND status:paid`;
+
+            const authority = req.authority;
+            if (authority === 2) {
+                filters += `AND status:private`
+            }
+
+            const result = await index.search(query, {
+                filters,
+                hitsPerPage: pageSize,
+                page: currentPage - 1
+            });
+
+            res.status(200).json({
+                total: result.nbHits,
+                result: result.hits
+            });
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // [GET] /combos/search/teacher/:teacherId/page/:page
+    searchComboOfTeacher = async (req: Request, res: Response, _next: NextFunction) => {
+        const client = algoliasearch(process.env.ALGOLIA_APPLICATION_ID, process.env.ALGOLIA_ADMIN_API_KEY);
+        const index = client.initIndex(process.env.ALGOLIA_COMBO_INDEX);
+        try {
+            const id_teacher = req.params.teacherId;
+            const { query } = req.query;
+
+            const currentPage: number = +req.params.page;
+            const pageSize: number = parseInt(process.env.SIZE_OF_PAGE || '10');
+
+            let filters = `id_teacher:${id_teacher}`;
+            if (req.authority !== 3) {
+                filters += `AND NOT status:draft`;
+                if (req.authority !== 2) {
+                    filters += `AND NOT status:private`
+                }
+            }
+
+            const result = await index.search(query, {
+                filters,
+                hitsPerPage: pageSize,
+                page: currentPage - 1
+            });
+
+            res.status(200).json({
+                total: result.nbHits,
+                result: result.hits
+            });
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // [POST] /api/v1/combos
     createComboExam = async (req: Request, res: Response, _next: NextFunction) => {
+        const client = algoliasearch(process.env.ALGOLIA_APPLICATION_ID, process.env.ALGOLIA_ADMIN_API_KEY);
+        const index = client.initIndex(process.env.ALGOLIA_COMBO_INDEX);
+
         const t = await sequelize.transaction();
         try {
             const id_teacher = req.teacher.data.id;
+            const teacher_name = req.teacher.data.name;
 
             let body = req.body.data;
             if (typeof body === "string") {
@@ -378,7 +593,20 @@ class ComboController {
             }
             await combo.addCategories(categoryInstances, { transaction: t });
 
+            const Categories = categoryInstances.map(({ id, name }) => ({ id, name }));
+            const user = { id: id_teacher, name: teacher_name };
+            const comboDataValues = combo.dataValues;
+
+            const algoliaDataToSave = {
+                ...comboDataValues,
+                user,
+                Categories,
+                objectID: combo.id
+            };
+
             await t.commit();
+
+            await index.saveObject(algoliaDataToSave);
 
             res.status(201).json(combo);
         } catch (error: any) {
@@ -490,6 +718,9 @@ class ComboController {
 
     // [PUT] /combos/:comboId
     updateCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        const client = algoliasearch(process.env.ALGOLIA_APPLICATION_ID, process.env.ALGOLIA_ADMIN_API_KEY);
+        const index = client.initIndex(process.env.ALGOLIA_COMBO_INDEX);
+
         const t = await sequelize.transaction();
         try {
             const id_combo = req.params.comboId;
@@ -501,52 +732,23 @@ class ComboController {
 
             let { exams, categories, ...comboBody } = data;
 
-            const combo = await Combo.findByPk(id_combo, {
-                include: [
-                    {
-                        model: Exam,
-                        attributes: ['id'],
-                        through: {
-                            attributes: []
-                        }
-                    },
-                    {
-                        model: Category,
-                        attributes: ['id'],
-                        through: {
-                            attributes: []
-                        }
-                    }
-                ]
-            });
+            const combo = await Combo.findByPk(id_combo);
 
-            for (const exam of combo.Exams) {
-                if (exams.includes(exam.id)) {
-                    exams = exams.filter((id: string) => id !== exam.id)
-                } else {
-                    const e = await Exam.findByPk(exam.id);
-                    await combo.removeExam(e, { transaction: t });
-                }
+            const examsList: any[] = [];
+            for (const exam of exams) {
+                const examRecord = await Exam.findByPk(exam);
+                examsList.push(examRecord);
             }
+            await combo.setExams(examsList, { transaction: t });
 
-            for (const id of exams) {
-                const e = await Exam.findByPk(id);
-                await combo.addExam(e, { transaction: t });
+            const categoriesList: any[] = [];
+            for (const category of categories) {
+                const categoryRecord = await Category.findByPk(category);
+                if (!categoryRecord) throw new Error("Category does not exist");
+                categoriesList.push(categoryRecord);
             }
-
-            for (const category of combo.Categories) {
-                if (categories.includes(category.id)) {
-                    categories = categories.filter((id: string) => id !== category.id);
-                } else {
-                    const c = await Category.findByPk(category.id);
-                    await combo.removeCategory(c, { transaction: t });
-                }
-            } 
-
-            for (const id of categories) {
-                const c = await Category.findByPk(id);
-                await combo.addCategory(c, { transaction: t });
-            }
+            await combo.setCategories(categoriesList, { transaction: t });
+            const Categories = categoriesList.map(({ id, name }) => ({ id, name }));
 
             await combo.update({
                 ...comboBody
@@ -555,6 +757,14 @@ class ComboController {
             });
 
             await t.commit();
+
+            const algoliaDataToSave = {
+                ...comboBody,
+                objectID: combo.id,
+                Categories
+            };
+
+            await index.partialUpdateObject(algoliaDataToSave);
 
             res.status(200).json(combo);
         } catch (error: any) {
@@ -565,6 +775,9 @@ class ComboController {
 
     // [DELETE] /combos/:comboId
     deleteCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        const client = algoliasearch(process.env.ALGOLIA_APPLICATION_ID, process.env.ALGOLIA_ADMIN_API_KEY);
+        const index = client.initIndex(process.env.ALGOLIA_COMBO_INDEX);
+
         const t = await sequelize.transaction();
         try {
             await Combo.destroy({
@@ -574,6 +787,10 @@ class ComboController {
             }, {
                 transaction: t
             });
+
+            await t.commit();
+
+            await index.deleteObject(req.params.comboId);
 
             res.status(200).json({
                 message: "Successfully deleted combo",

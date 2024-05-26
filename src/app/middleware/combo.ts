@@ -130,6 +130,24 @@ class CheckingCombo {
             next(createError.InternalServerError(error.message));
         }
     }
+
+    checkSearchComboOfTeacher = async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            const id_teacher = req.params.teacherId;
+            const id_user = req.user?.user.data.id;
+
+            if (req.authority === 0) return next();
+
+            if (id_user === id_teacher) {
+                req.authority = 3;
+                return next();
+            }
+            next();
+        } catch (error: any) {
+            console.log(error.message);
+            next(createError.InternalServerError(error.message));
+        }
+    }
 }
 
 

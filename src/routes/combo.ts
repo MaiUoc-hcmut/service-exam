@@ -65,6 +65,21 @@ router.route('/student/:studentId/page/:page')
         ComboController.getComboThatStudentBought
     );
 
+router.route('/search/page/:page')
+    .get(
+        Authorize.checkGetAll,
+        Authorize.verifyUser,
+        ComboController.searchCombo
+    );
+
+router.route('/search/teacher/:teacherId/page/:page')
+    .get(
+        Authorize.checkGetAll,
+        Authorize.verifyUser,
+        CheckingCombo.checkSearchComboOfTeacher,
+        ComboController.searchComboOfTeacher
+    );
+
 
 module.exports = router;
 
