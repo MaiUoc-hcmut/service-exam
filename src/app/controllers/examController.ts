@@ -460,7 +460,6 @@ class ExamController {
     // [POST] /api/v1/exams
     createExam = async (req: Request, res: Response, _next: NextFunction) => {
         let body = req.body.data;
-        console.log(req.body.data);
 
         if (typeof body === "string") {
             body = JSON.parse(body);
@@ -491,7 +490,7 @@ class ExamController {
                 return res.status(400).json({ message: "Pass score missed!" });
             }
 
-            if (pass_score < 0 || pass_score > 10) {
+            if (pass_score !== undefined && (pass_score < 0 || pass_score > 10)) {
                 return res.status(400).json({ message: "Pass score must be in range 0 to 10" });
             }
 
