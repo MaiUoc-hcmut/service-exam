@@ -1,5 +1,6 @@
 const Knowledge = require('../../db/model/knowledge');
 const Category = require('../../db/model/category');
+const ParentCategory = require('../../db/model/par_category');
 
 const { sequelize } = require('../../config/db/index');
 
@@ -15,7 +16,26 @@ class KnowledgeController {
     // [GET] /knowledges
     getAllKnowledges = async (req: Request, res: Response, _next: NextFunction) => {
         try {
-            const knowledges = await Knowledge.findAll();
+            const knowledges = await Knowledge.findAll({
+                include: [{
+                    model: Category,
+                    attributes: ['id', 'id_par_category', 'name'],
+                    through: {
+                        attributes: []
+                    }
+                }]
+            });
+
+            for (const knowledge of knowledges) {
+                for (const category of knowledge.Categories) {
+                    const parCategory = await ParentCategory.findByPk(category.id_par_category);
+                    category.dataValues[`${parCategory.name}`] = category.name;
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
+                    delete category.dataValues.createdAt;
+                    delete category.dataValues.updatedAt;
+                }
+            }
 
             res.status(200).json(knowledges);
         } catch (error: any) {
