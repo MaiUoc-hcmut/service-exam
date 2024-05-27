@@ -165,13 +165,6 @@ class ComboController {
                 },
                 include: [
                     {
-                        model: Exam,
-                        attributes: ['id', 'quantity_question'],
-                        through: {
-                            attributes: []
-                        }
-                    },
-                    {
                         model: Category,
                         attributes: ['id', 'id_par_category', 'name'],
                         through: {
@@ -233,25 +226,33 @@ class ComboController {
                     console.log(error.message);
                 }
 
-                for (const category of combo.Categories) {
+                const combo_category = await Combo.findOne({
+                    where: {
+                        id: combo.id
+                    },
+                    attributes: [],
+                    include: [{
+                        model: Category,
+                        attributes: ['id', 'id_par_category', 'name'],
+                        through: {
+                            attributes: []
+                        }
+                    }]
+                })
+
+                for (const category of combo_category.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
                     category.dataValues[`${parCategory.name}`] = category.name;
-
                     delete category.dataValues.name;
                     delete category.dataValues.id_par_category;
+                    delete category.dataValues.createdAt;
+                    delete category.dataValues.updatedAt;
                 }
-
-                let question_quantity = 0;
-                for (const exam of combo.Exams) {
-                    question_quantity += exam.quantity_question;
-                }
-                combo.dataValues.exam_quantity = combo.Exams.length;
-                combo.dataValues.question_quantity = question_quantity;
-                delete combo.dataValues.Exams;
+                combo.dataValues.Categories = combo_category.dataValues.Categories;
             }
 
             res.status(200).json({
-                count,
+                count: count.length,
                 combos
             });
         } catch (error: any) {

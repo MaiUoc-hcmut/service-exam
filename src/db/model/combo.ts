@@ -36,6 +36,14 @@ Combo.init({
     cover: {
         type: DataTypes.TEXT
     },
+    exam_quantity: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        defaultValue: 0
+    },
+    question_quantity: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        defaultValue: 0
+    },
     average_rating: {
         type: DataTypes.FLOAT,
         defaultValue: 0,
