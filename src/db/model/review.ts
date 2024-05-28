@@ -17,6 +17,7 @@ Review.init(
             allowNull: false
         },
         id_exam: DataTypes.UUID,
+        id_combo: DataTypes.UUID,
         content: DataTypes.STRING(1000),
         image: DataTypes.STRING(255),
         rating: {
