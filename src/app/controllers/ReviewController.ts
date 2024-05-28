@@ -1,5 +1,6 @@
 const Review = require('../../db/model/review');
 const Exam = require('../../db/model/exam');
+const Combo = require('../../db/model/combo');
 
 const axios = require('axios');
 require('dotenv').config();
@@ -140,6 +141,101 @@ class ReviewController {
         }
     }
 
+    // [GET] /reviews/combo/:comboId/page/:page
+    getReviewsForCombo = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const id_combo = req.params.comboId;
+            const combo = await Combo.findByPk(id_combo);
+
+            const currentPage: number = +req.params.page;
+            const pageSize: number = parseInt(process.env.SIZE_OF_PAGE || '10');
+
+            let preDate: Date = new Date(0);
+            let postDate: Date = new Date();
+
+            if (typeof req.query.postDate === 'string') {
+                const date1 = new Date(req.query.postDate);
+                if (!Number.isNaN(date1.getTime())) {
+                    postDate = date1;
+                }
+            } else if (req.query.postDate instanceof Date) {
+                postDate = req.query.postDate;
+            }
+
+            if (typeof req.query.preDate === 'string') {
+                const date2 = new Date(req.query.preDate);
+                if (!Number.isNaN(date2.getTime())) {
+                    postDate = date2;
+                }
+            } else if (req.query.preDate instanceof Date) {
+                preDate = req.query.preDate;
+            }
+
+            const date_condition: any = {
+                [Op.between]: [preDate, postDate]
+            }
+
+            let rating = req.query.rating;
+            let rating_condition: number[] = [];
+            if (typeof rating === "string" && !Number.isNaN(parseInt(rating))) {
+                rating_condition.push(parseInt(rating));
+            } else if (Array.isArray(rating)) {
+                for (const r of rating) {
+                    if (typeof r === "string" && !Number.isNaN(parseInt(r))) {
+                        rating_condition.push(parseInt(r));
+                    }
+                }
+            }
+            if (rating_condition.length === 0) {
+                rating_condition = [1, 2, 3, 4, 5]
+            }
+
+            const count = await Review.count({
+                where: { id_combo, createdAt: date_condition, rating: rating_condition }
+            });
+
+            const reviews = await Review.findAll({
+                where: { id_combo, createdAt: date_condition, rating: rating_condition },
+                limit: pageSize,
+                offset: pageSize * (currentPage - 1)
+            });
+
+            let totalRating = 0;
+            let starCount: { [key: number]: number } = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+
+            for (const review of reviews) {
+                totalRating += review.rating;
+                starCount[review.rating]++;
+                
+                const user = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/student/${review.id_student}`);
+
+                review.dataValues.user = { avatar: user.data.avatar, name: user.data.name };
+                review.dataValues.combo = combo.name;
+            }
+
+            let starDetails: { [key: string]: { quantity: number, percentage: number } } = {};
+
+            for (let i = 1; i <= 5; i++) {
+                starDetails[`${i}star`] = {
+                    quantity: starCount[i],
+                    percentage: (starCount[i] / reviews.length) * 100
+                };
+            }
+
+            let response = {
+                count,
+                reviews,
+                averageRating: totalRating / reviews.length,
+                starDetails
+            }
+
+            res.status(200).json(response);
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error });
+        }
+    }
+
     // [GET] /reviews/teacher/:teacherId
     getAllReviewsOfAllExamsOfTeacher = async (req: Request, res: Response, _next: NextFunction) => {
         try {
@@ -246,32 +342,61 @@ class ReviewController {
                 body = JSON.parse(body);
             }
 
-            const exam = await Exam.findByPk(body.id_exam);
-            let total_review: number = exam.total_review;
-            let average_rating: number = exam.average_rating;
+            if (body.id_exam) {
+                const exam = await Exam.findByPk(body.id_exam);
+                let total_review: number = exam.total_review;
+                let average_rating: number = exam.average_rating;
 
-            const review = await Review.findOne({
-                where: {
-                    id_student,
-                    id_exam: body.id_exam
+                const review = await Review.findOne({
+                    where: {
+                        id_student,
+                        id_exam: body.id_exam
+                    }
+                });
+
+                if (review) {
+                    const deletedRating = review.rating;
+                    average_rating = ((average_rating * total_review) - deletedRating + body.rating) / total_review;
+                    await review.destroy({ transaction: t });
+                } else {
+                    total_review += 1;
+                    average_rating = ((average_rating * exam.total_review) + body.rating) / total_review;
                 }
-            });
 
-            if (review) {
-                const deletedRating = review.rating;
-                average_rating = ((average_rating * total_review) - deletedRating + body.rating) / total_review;
-                await review.destroy({ transaction: t });
+                await exam.update({
+                    average_rating,
+                    total_review
+                }, {
+                    transaction: t
+                });
             } else {
-                total_review += 1;
-                average_rating = ((average_rating * exam.total_review) + body.rating) / total_review;
-            }
+                const combo = await Combo.findByPk(body.id_exam);
+                let total_review: number = combo.total_review;
+                let average_rating: number = combo.average_rating;
 
-            await exam.update({
-                average_rating,
-                total_review
-            }, {
-                transaction: t
-            });
+                const review = await Review.findOne({
+                    where: {
+                        id_student,
+                        id_combo: body.id_combo
+                    }
+                });
+
+                if (review) {
+                    const deletedRating = review.rating;
+                    average_rating = ((average_rating * total_review) - deletedRating + body.rating) / total_review;
+                    await review.destroy({ transaction: t });
+                } else {
+                    total_review += 1;
+                    average_rating = ((average_rating * combo.total_review) + body.rating) / total_review;
+                }
+
+                await combo.update({
+                    average_rating,
+                    total_review
+                }, {
+                    transaction: t
+                });
+            }
             
             const newReview = await Review.create({
                 id_student,

@@ -29,6 +29,9 @@ router.route('/student/:studentId/page/:page')
 router.route('/exam/:examId/page/:page')
     .get(reviewController.getReviewsForExam);
 
+router.route('/combo/:comboId/page/:page')
+    .get(reviewController.getReviewsForCombo)
+
 router.route('/teacher/:teacherId')
     .get(reviewController.getAllReviewsOfAllExamsOfTeacher);
 
