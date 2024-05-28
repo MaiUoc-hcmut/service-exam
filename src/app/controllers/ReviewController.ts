@@ -277,6 +277,48 @@ class ReviewController {
         }
     }
 
+    // [GET] /reviews/combo/teacher/:teacherId
+    getAllReviewsOfAllCombosOfTeacher = async (req: Request, res: Response, _next: NextFunction) => {
+        try {
+            const id_teacher = req.params.teacherId;
+
+            const reviewList: any[] = [];
+
+            const combos = await Combo.findAll({
+                where: {
+                    id_teacher
+                }
+            });
+
+            for (const combo of combos) {
+                const reviews = await Review.findAll({
+                    where: {
+                        id_combo: combo.id
+                    }
+                });
+
+                for (const review of reviews) {
+                    review.dataValues.combo_name = combo.name;
+
+                    const student = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/student/${review.id_student}`);
+                    review.dataValues.user = {
+                        id: student.data.id,
+                        name: student.data.name,
+                        email: student.data.email,
+                        avatar: student.data.avatar
+                    }
+                }
+
+                reviewList.push(...reviews);
+            }
+
+            res.status(200).json(reviewList);
+        } catch (error: any) {
+            console.log(error.message);
+            res.status(500).json({ error });
+        }
+    }
+
     // [GET] /reviews/:reviewId
     getReviewById = async (req: Request, res: Response, _next: NextFunction) => {
         try {
