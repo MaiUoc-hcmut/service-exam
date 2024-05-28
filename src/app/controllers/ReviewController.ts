@@ -370,7 +370,7 @@ class ReviewController {
                     transaction: t
                 });
             } else {
-                const combo = await Combo.findByPk(body.id_exam);
+                const combo = await Combo.findByPk(body.id_combo);
                 let total_review: number = combo.total_review;
                 let average_rating: number = combo.average_rating;
 

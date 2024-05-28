@@ -1,5 +1,6 @@
 const Exam = require('../../db/model/exam');
 const Review = require('../../db/model/review');
+const Combo = require('../../db/model/combo');
 
 import axios from "axios";
 import { Request, Response, NextFunction } from "express";
@@ -13,15 +14,25 @@ class CheckingReview {
         try {
             const body = req.body.data;
 
-            if (!body.id_exam) {
-                let error = "You must choose exam to review!";
+            if (!body.id_exam && !body.id_combo) {
+                let error = "You must choose exam or combo to review!";
                 return next(createError.BadRequest(error));
             }
             
-            const exam = await Exam.findByPk(body.id_exam);
-            if (!exam) {
-                let e = "Exam does not exist!";
-                return next(createError.BadRequest(e));
+            if (body.id_exam) {
+                const exam = await Exam.findByPk(body.id_exam);
+                if (!exam) {
+                    let e = "Exam does not exist!";
+                    return next(createError.BadRequest(e));
+                }
+            }
+
+            if (body.id_combo) {
+                const combo = await Combo.findByPk(body.id_combo);
+                if (!combo) {
+                    let e = "Combo does not exist!";
+                    return next(createError.BadRequest(e));
+                }
             }
            
             next();
