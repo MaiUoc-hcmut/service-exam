@@ -35,6 +35,9 @@ router.route('/combo/:comboId/page/:page')
 router.route('/teacher/:teacherId')
     .get(reviewController.getAllReviewsOfAllExamsOfTeacher);
 
+router.route('/combo/teacher/:teacherId')
+    .get(reviewController.getAllReviewsOfAllCombosOfTeacher);
+
 module.exports = router;
 
 export {}
