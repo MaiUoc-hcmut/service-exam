@@ -290,6 +290,17 @@ class ExamController {
                 }
             }
 
+            if (examQuery === "false") {
+                for (const exam of exams) {
+                    try {
+                        const course = await axios.get(`${process.env.BASE_URL_COURSE_LOCAL}/courses/${exam.id_course}`);
+                        exam.dataValues.course_name = course.data.name;
+                    } catch (error) {
+                        exam.dataValues.course_name = "Khóa học đã bị xóa hoặc ẩn";
+                    }
+                }
+            }
+
             res.status(200).json({ count, exams });
         } catch (error: any) {
             console.log(error.message);
