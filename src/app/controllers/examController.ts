@@ -279,6 +279,8 @@ class ExamController {
                 offset: pageSize * (currentPage - 1)
             });
 
+            console.log(exams);
+
             for (const exam of exams) {
                 // Format category before response
                 for (const category of exam.Categories) {
@@ -511,7 +513,8 @@ class ExamController {
                 categoryInstances.push(category);
             }
 
-            const actualStatus = status !== undefined ? status : true;
+            const actualStatus = status !== undefined ? status : "public";
+            console.log(status);
 
             const newExam = await Exam.create({
                 id_teacher,
