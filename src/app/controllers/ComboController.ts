@@ -493,11 +493,11 @@ class ComboController {
             const pageSize: number = parseInt(process.env.SIZE_OF_PAGE || '10');
 
             const query = req.query.query;
-            let filters = `status:public AND status:paid`;
+            let filters = ``;
 
             const authority = req.authority;
-            if (authority === 2) {
-                filters += `AND status:private`
+            if (authority !== 2) {
+                filters += ` AND status:public`
             }
 
             const result = await index.search(query, {
