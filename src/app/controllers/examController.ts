@@ -450,7 +450,7 @@ class ExamController {
                 filters += ` AND id_teacher:${id_teacher}`
             }
             if (authority !== 2) {
-                filters += ` AND status:public`
+                filters += ` AND (status:public OR status:paid)`
             }
 
             const result = await index.search(query, {

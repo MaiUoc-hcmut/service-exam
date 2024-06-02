@@ -497,7 +497,7 @@ class ComboController {
 
             const authority = req.authority;
             if (authority !== 2) {
-                filters += `status:public`
+                filters += `status:public OR status:paid`
             }
 
             const result = await index.search(query, {
