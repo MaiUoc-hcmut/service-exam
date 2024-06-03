@@ -45,7 +45,7 @@ class ReviewController {
                 queryOption.where = {
                     id_combo: null
                 }
-            } else if (type === "exam") {
+            } else if (type === "combo") {
                 queryOption.where = {
                     id_exam: null
                 }
