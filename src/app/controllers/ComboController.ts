@@ -284,9 +284,11 @@ class ComboController {
 
             for (const category of combo.Categories) {
                 const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                combo.dataValues[`${parCategory.name}`] = category.name;
+                category.dataValues[`${parCategory.name}`] = category.name;
+
+                delete category.dataValues.name;
+                delete category.dataValues.id_par_category;
             }
-            delete combo.dataValues.Categories;
 
             let quantity_question = 0;
             for (const exam of combo.Exams) {
@@ -375,9 +377,11 @@ class ComboController {
                 // Format category before response
                 for (const category of combo.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    combo.dataValues[`${parCategory.name}`] = category.name;
+                    category.dataValues[`${parCategory.name}`] = category.name;
+
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
                 }
-                delete combo.dataValues.Categories;
             }
 
             res.status(200).json({
@@ -437,9 +441,11 @@ class ComboController {
 
                 for (const category of combo.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    combo.dataValues[`${parCategory.name}`] = category.name;
+                    category.dataValues[`${parCategory.name}`] = category.name;
+
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
                 }
-                delete combo.dataValues.Categories;
                 
                 try {
                     const teacher = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/teacher/get-teacher-by-id/${combo.id_teacher}`);

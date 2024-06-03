@@ -280,10 +280,11 @@ class ExamController {
                 // Format category before response
                 for (const category of exam.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    exam.dataValues[`${parCategory.name}`] = category.name;
-                }
+                    category.dataValues[`${parCategory.name}`] = category.name;
 
-                delete exam.dataValues.Categories;
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
+                }
             }
 
             if (examQuery === "false") {
@@ -408,9 +409,11 @@ class ExamController {
             if (exam.Categories) {
                 for (const category of exam.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    exam.dataValues[`${parCategory.name}`] = category.name;
+                    category.dataValues[`${parCategory.name}`] = category.name;
+                    
+                    delete category.dataValues.name;
+                    delete category.dataValues.id_par_category;
                 }
-                delete exam.dataValues.Categories;
             }
 
             exam.dataValues.classification = classification;
