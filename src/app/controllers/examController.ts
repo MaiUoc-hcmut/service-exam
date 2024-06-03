@@ -195,12 +195,9 @@ class ExamController {
 
                 for (const category of exam_category.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    category.dataValues[`${parCategory.name}`] = category.name;
-                    delete category.dataValues.name;
-                    delete category.dataValues.id_par_category;
+                    exam.dataValues[`${parCategory.name}`] = category.name;
                 }
-
-                exam.dataValues.Categories = exam_category.dataValues.Categories;
+                delete exam.dataValues.Categories;
             }
 
             res.status(200).json({
@@ -279,17 +276,14 @@ class ExamController {
                 offset: pageSize * (currentPage - 1)
             });
 
-            console.log(exams);
-
             for (const exam of exams) {
                 // Format category before response
                 for (const category of exam.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    category.dataValues[`${parCategory.name}`] = category.name;
-
-                    delete category.dataValues.name;
-                    delete category.dataValues.id_par_category;
+                    exam.dataValues[`${parCategory.name}`] = category.name;
                 }
+
+                delete exam.dataValues.Categories;
             }
 
             if (examQuery === "false") {
@@ -414,10 +408,9 @@ class ExamController {
             if (exam.Categories) {
                 for (const category of exam.Categories) {
                     const parCategory = await ParentCategory.findByPk(category.id_par_category);
-                    category.dataValues[`${parCategory.name}`] = category.name;
-                    delete category.dataValues.name;
-                    delete category.dataValues.id_par_category;
+                    exam.dataValues[`${parCategory.name}`] = category.name;
                 }
+                delete exam.dataValues.Categories;
             }
 
             exam.dataValues.classification = classification;
