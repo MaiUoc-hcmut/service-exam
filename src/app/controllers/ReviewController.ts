@@ -55,11 +55,11 @@ class ReviewController {
             for (const review of reviews) {
                 try {
                     const student = await axios.get(`${process.env.BASE_URL_USER_LOCAL}/student/${review.id_student}`);
-                    review.dataValues.student = {
-                        id: student.id,
-                        name: student.name,
-                        email: student.email,
-                        avatar: student.avatar
+                    review.dataValues.user = {
+                        id: student.data.id,
+                        name: student.data.name,
+                        email: student.data.email,
+                        avatar: student.data.avatar
                     }
                 } catch (error) {
                     review.dataValues.student = {
@@ -71,20 +71,12 @@ class ReviewController {
                 }
                 if (type === "exam") {
                     const exam = await Exam.findByPk(review.id_exam);
-                    review.dataValues.exam = {
-                        id: exam.id,
-                        name: exam.title
-                    }
-                    delete review.dataValues.id_exam;
+                    review.dataValues.exam_name = exam.title;
                 }
 
                 if (type === "combo") {
                     const combo = await Combo.findByPk(review.id_combo);
-                    review.dataValues.combo = {
-                        id: combo.id,
-                        name: combo.title
-                    }
-                    delete review.dataValues.id_combo;
+                    review.dataValues.combo_name = combo.name;
                 }
                 delete review.dataValues.id_student;
             }
