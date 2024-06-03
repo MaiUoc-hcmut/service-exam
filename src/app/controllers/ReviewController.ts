@@ -35,9 +35,41 @@ declare global {
 class ReviewController {
 
     // [GET] /reviews
-    getAllReviews = async (_req: Request, res: Response, _next: NextFunction) => {
+    getAllReviews = async (req: Request, res: Response, _next: NextFunction) => {
         try {
-            const reviews = await Review.findAll();
+            const { type } = req.query;
+
+            const queryOption: any = {}
+
+            if (type === "exam") {
+                queryOption.where = {
+                    id_combo: null
+                }
+            } else if (type === "exam") {
+                queryOption.where = {
+                    id_exam: null
+                }
+            }
+            const reviews = await Review.findAll(queryOption);
+
+            for (const review of reviews) {
+                try {
+                    const student = await axios.get(`${process.env.BASE_URL_LOCAL}/student/${review.id_student}`);
+                    review.dataValues.student = {
+                        id: student.id,
+                        name: student.name,
+                        email: student.email,
+                        avatar: student.avatar
+                    }
+                } catch (error) {
+                    review.dataValues.student = {
+                        id: review.id_student,
+                        name: "Error",
+                        email: "Error",
+                        avatar: "Error"
+                    }
+                }
+            }
 
             res.status(200).json(reviews);
         } catch (error: any) {
