@@ -820,10 +820,21 @@ class AssignmentController {
                     });
                 }
 
+                let is_correct = true;
+
+                for (let answer of question.Answers) {
+                    if (answer.is_correct && !answer.selected_answer.dataValues.is_selected) is_correct = false;
+                }
+
+                question.dataValues.content_text = q.content_text;
+                question.dataValues.content_image = q.content_image;
+                question.dataValues.multi_choice = q.multi_choice;
+                question.dataValues.is_correct = is_correct;
+
                 if (q.Knowledge.length === 0) {
                     const foundObject = classification.find(o => o.name === "other");
                     if (!foundObject) {
-                        if (question.is_correct) {
+                        if (is_correct) {
                             classification.push({
                                 name: "other",
                                 questions: [{
@@ -850,7 +861,7 @@ class AssignmentController {
                             order: question.order
                         });
 
-                        if (question.is_correct) {
+                        if (is_correct) {
                             foundObject.right_answer++;
                         } else {
                             foundObject.wrong_answer++;
@@ -861,7 +872,7 @@ class AssignmentController {
                     for (const knowledge of q.Knowledge) {
                         const foundObject = classification.find(o => o.name === knowledge.name);
                         if (!foundObject) {
-                            if (question.is_correct) {
+                            if (is_correct) {
                                 classification.push({
                                     name: knowledge.name,
                                     questions: [{
@@ -888,7 +899,7 @@ class AssignmentController {
                                 order: question.order
                             });
     
-                            if (question.is_correct) {
+                            if (is_correct) {
                                 foundObject.right_answer++;
                             } else {
                                 foundObject.wrong_answer++;
@@ -901,18 +912,6 @@ class AssignmentController {
                     }
                     question.dataValues.knowledges = knowledges;
                 }
-
-
-                let is_correct = true;
-
-                for (let answer of question.Answers) {
-                    if (answer.is_correct && !answer.selected_answer.dataValues.is_selected) is_correct = false;
-                }
-
-                question.dataValues.content_text = q.content_text;
-                question.dataValues.content_image = q.content_image;
-                question.dataValues.multi_choice = q.multi_choice;
-                question.dataValues.is_correct = is_correct;
 
                 if (authority !== 2) {
                     delete question.dataValues.draft;
