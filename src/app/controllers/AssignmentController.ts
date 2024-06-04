@@ -792,7 +792,8 @@ class AssignmentController {
                 name: string,
                 questions: {
                     id: string,
-                    order: number
+                    order: number,
+                    is_correct: boolean,
                 }[],
                 right_answer: number,
                 wrong_answer: number,
@@ -839,7 +840,8 @@ class AssignmentController {
                                 name: "other",
                                 questions: [{
                                     id: q.id,
-                                    order: question.order
+                                    order: question.order,
+                                    is_correct
                                 }],
                                 right_answer: 1,
                                 wrong_answer: 0
@@ -849,7 +851,8 @@ class AssignmentController {
                                 name: "other",
                                 questions: [{
                                     id: q.id,
-                                    order: question.order
+                                    order: question.order,
+                                    is_correct
                                 }],
                                 right_answer: 0,
                                 wrong_answer: 1
@@ -858,7 +861,8 @@ class AssignmentController {
                     } else {
                         foundObject.questions.push({
                             id: q.id,
-                            order: question.order
+                            order: question.order,
+                            is_correct
                         });
 
                         if (is_correct) {
@@ -877,7 +881,8 @@ class AssignmentController {
                                     name: knowledge.name,
                                     questions: [{
                                         id: q.id,
-                                        order: question.order
+                                        order: question.order,
+                                        is_correct
                                     }],
                                     right_answer: 1,
                                     wrong_answer: 0
@@ -887,7 +892,8 @@ class AssignmentController {
                                     name: knowledge.name,
                                     questions: [{
                                         id: q.id,
-                                        order: question.order
+                                        order: question.order,
+                                        is_correct
                                     }],
                                     right_answer: 0,
                                     wrong_answer: 1
@@ -896,7 +902,8 @@ class AssignmentController {
                         } else {
                             foundObject.questions.push({
                                 id: q.id,
-                                order: question.order
+                                order: question.order,
+                                is_correct
                             });
     
                             if (is_correct) {
